@@ -34,7 +34,7 @@ def monitor_channel(channel_number, bitrate, ticktime):
     print("Listening...")
     while True:
         try:
-            frame = ch.read(timeout=int(timeout * 1000))
+            frame = ch.read(timeout=int(timeout * 10000))
             printframe(frame, width)
         except canlib.CanNoMsg:
             if ticktime is not None:

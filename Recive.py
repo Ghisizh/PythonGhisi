@@ -17,8 +17,8 @@ def main():
         while True:
             try:
                 # Ler a próxima mensagem disponível, com um tempo limite de 500 ms
-                msg = ch_a.read(timeout=500)
-                print(f"Mensagem recebida: ID={msg.id}, Dados={msg.data}, Flags={msg.flags}")
+                msg = ch_a.read(timeout=50000)
+                print(f"Mensagem recebida: ID={hex(msg.id)}, Dados={msg.data}, Flags={msg.flags}")
 
             except canlib.canNoMsg:
                 print("Nenhuma mensagem recebida dentro do tempo limite.")
