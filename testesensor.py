@@ -1,11 +1,10 @@
-import shutil
 import sys
 from canlib import canlib, Frame
-import time
 
 bitrates = {
     '250K': canlib.Bitrate.BITRATE_250K,
 }
+
 
 def printframe(frame, width):
     form = '═^' + str(width - 1)
@@ -15,34 +14,31 @@ def printframe(frame, width):
     print("data:", bytes(frame.data))
     print("timestamp:", frame.timestamp)
 
+
 def calculadados(byte1, byte2, slope, offset, decimal):
-    result =(((byte2 * 256) + byte1) * slope) - offset
+    result = (((byte2 * 256) + byte1) * slope) - offset
     return round(result, decimal)
+
 
 def mensagefilter(code, mask):
     msg_filter = canlib.objbuf.MessageFilter(code=code, mask=mask)
     return msg_filter
 
+
 def createframe(id, data):
     frame = Frame(id_=id, dlc=8, data=data, flags=canlib.canMSG_EXT)
     return frame
 
-def main(channel_index, ticktime):
+
+def main(channel_index):
     ch = canlib.openChannel(channel=int(channel_index))
     ch.setBusParams(canlib.canBITRATE_250K)
     ch.busOn()
-    width, height = shutil.get_terminal_size((80, 20))
     msgdewon = createframe(0x18fedf00, [0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xf7])
     msgdewoff = createframe(0x18fedf00, [0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xf3])
     msgdatafilter = mensagefilter(0x00f00f00, 0x00ffff00)
     contador = 0
     amostras = 0
-    timeout = 0.5
-    tick_countup = 0
-    if ticktime <= 0:
-        ticktime = None
-    elif ticktime < timeout:
-        timeout = ticktime
 
     aquecendo_displayed = False  # Variável para controlar a exibição da mensagem "Aquecendo"
 
@@ -69,9 +65,6 @@ def main(channel_index, ticktime):
                         contador += 1
 
             if contador > 1:
-                contador += 1
-
-            if contador > 150:
                 try:
                     if msgdatafilter(frame.id):
                         nox_value = calculadados(frame.data[0], frame.data[1], 0.05, 200, 0)
@@ -79,7 +72,7 @@ def main(channel_index, ticktime):
                         # Limpa a linha atual e escreve os novos valores
                         sys.stdout.write(f"\rNox= {nox_value} ppm, O2= {o2_value} %")
                         sys.stdout.flush()
-                        if nox_value < 30:
+                        if nox_value < 5:
                             amostras += 1
                         if amostras > 150:
                             print("\n===============================================")
@@ -94,11 +87,7 @@ def main(channel_index, ticktime):
                     # Continua o loop para tentar novamente
 
         except canlib.CanNoMsg:
-            if ticktime is not None:
-                tick_countup += timeout
-                while tick_countup > ticktime:
-                    print("tick")
-                    tick_countup -= ticktime
+            print("Can no msg")
         except KeyboardInterrupt:
             print("Stop.")
             break
@@ -106,5 +95,6 @@ def main(channel_index, ticktime):
     ch.busOff()
     ch.close()
 
+
 if __name__ == "__main__":
-    main(0, 0)
+    main(0)
