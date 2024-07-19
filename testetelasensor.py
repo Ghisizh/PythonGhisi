@@ -25,7 +25,7 @@ class RedirectText(object):
         pass
 
 def iniciar_script():
-    global stop_threads
+    global stop_threads, timer
     stop_threads = False
     botao_iniciar.config(state=tk.DISABLED, bg="grey")
     botao_reiniciar.config(state=tk.NORMAL, bg="SystemButtonFace")
@@ -35,9 +35,12 @@ def iniciar_script():
     console_text.config(state=tk.DISABLED)
     thread = threading.Thread(target=script, args=(0,))
     thread.start()
+    # Inicia o timer de 5 minutos
+    timer = threading.Timer(300, timer_acabou)
+    timer.start()
 
 def reiniciar_script():
-    global stop_threads
+    global stop_threads, timer
     stop_threads = True
     botao_iniciar.config(state=tk.NORMAL, bg="SystemButtonFace")
     botao_reiniciar.config(state=tk.DISABLED, bg="grey")
@@ -45,6 +48,25 @@ def reiniciar_script():
     console_text.delete(1.0, tk.END)
     console_text.insert(tk.END, "Script resetado!\n")
     console_text.config(state=tk.DISABLED)
+    send_all_dewoff_messages()
+    timer.cancel()
+def timer_acabou():
+    send_all_dewoff_messages()
+    print("Tempo do programa expirado")
+def send_all_dewoff_messages():
+    global msgdewoffnorma, msgdewoffmbb, msgdewoffvolvo, msgdewoffiveco, msgdewoffscania
+    ch = canlib.openChannel(channel=0)
+    ch.setBusParams(canlib.canBITRATE_250K)
+    ch.busOn()
+    ch.write(msgdewoffnorma)
+    ch.write(msgdewoffmbb)
+    ch.write(msgdewoffvolvo)
+    ch.write(msgdewoffiveco)
+    ch.write(msgdewoffscania)
+    ch.busOff()
+    ch.close()
+    botao_iniciar.config(state=tk.NORMAL, bg="SystemButtonFace")
+    botao_reiniciar.config(state=tk.DISABLED, bg="grey")
 
 def printframe(frame, width):
     form = '═^' + str(width - 1)
@@ -67,7 +89,7 @@ def createframe(id, data):
     return frame
 
 def script(channel_index):
-    global stop_threads
+    global stop_threads, msgdewoffnorma, msgdewoffmbb, msgdewoffvolvo, msgdewoffiveco, msgdewoffscania
     ch = canlib.openChannel(channel=int(channel_index))
     ch.setBusParams(canlib.canBITRATE_250K)
     ch.busOn()
@@ -93,6 +115,7 @@ def script(channel_index):
     aquecendo_displayed = False
     sensorid_displayed = False
     print("Listening...")
+
     while not stop_threads:
         try:
             frame = ch.read(timeout=500)
@@ -104,6 +127,8 @@ def script(channel_index):
                     print("Sensor dentro da norma J1939")
                     sensorid_displayed = True
                 if contador == 0:
+                    ch.write(msgdewonnorma)
+                    ch.write(msgdewonnorma)
                     ch.write(msgdewonnorma)
                     print("Dew point ON")
                     contador += 1
@@ -126,12 +151,15 @@ def script(channel_index):
                             nox_value = calculadados(frame.data[0], frame.data[1], 0.05, 200, 0)
                             o2_value = calculadados(frame.data[2], frame.data[3], 0.000514, 12, 1)
                             sys.stdout.overwrite(f"Nox= {nox_value} ppm, O2= {o2_value} %")
-                            if nox_value < 5:
+
+                            if nox_value < 20:
                                 amostras += 1
-                            if amostras > 150:
+                            if amostras > 300:
                                 print("\n===============================================")
                                 print("\nValor estável")
                                 print(f"Nox= {nox_value} ppm, O2= {o2_value} %")
+                                ch.write(msgdewoffnorma)
+                                ch.write(msgdewoffnorma)
                                 ch.write(msgdewoffnorma)
                                 break
 
@@ -143,6 +171,8 @@ def script(channel_index):
                     print("Sensor fabricante MBB")
                     sensorid_displayed = True
                 if contador == 0:
+                    ch.write(msgdewonmbb)
+                    ch.write(msgdewonmbb)
                     ch.write(msgdewonmbb)
                     print("Dew point ON")
                     contador += 1
@@ -165,12 +195,15 @@ def script(channel_index):
                             nox_value = calculadados(frame.data[0], frame.data[1], 1, 0, 0)
                             o2_value = calculadados(frame.data[2], frame.data[3], -0.0186, -20.9, 1)
                             sys.stdout.overwrite(f"Nox= {nox_value} ppm, O2= {o2_value} %")
-                            if nox_value < 5:
+
+                            if nox_value < 20:
                                 amostras += 1
-                            if amostras > 150:
+                            if amostras > 300:
                                 print("\n===============================================")
                                 print("\nValor estável")
                                 print(f"Nox= {nox_value} ppm, O2= {o2_value} %")
+                                ch.write(msgdewoffmbb)
+                                ch.write(msgdewoffmbb)
                                 ch.write(msgdewoffmbb)
                                 break
 
@@ -182,6 +215,8 @@ def script(channel_index):
                     print("Sensor fabricante VOLVO")
                     sensorid_displayed = True
                 if contador == 0:
+                    ch.write(msgdewonvolvo)
+                    ch.write(msgdewonvolvo)
                     ch.write(msgdewonvolvo)
                     print("Dew point ON")
                     contador += 1
@@ -204,12 +239,15 @@ def script(channel_index):
                             nox_value = calculadados(frame.data[0], frame.data[1], 1, 0, 0)
                             o2_value = calculadados(frame.data[2], frame.data[3], -0.0186, -21.9, 1)
                             sys.stdout.overwrite(f"Nox= {nox_value} ppm, O2= {o2_value} %")
-                            if nox_value < 5:
+
+                            if nox_value < 20:
                                 amostras += 1
-                            if amostras > 150:
+                            if amostras > 300:
                                 print("\n===============================================")
                                 print("\nValor estável")
                                 print(f"Nox= {nox_value} ppm, O2= {o2_value} %")
+                                ch.write(msgdewoffvolvo)
+                                ch.write(msgdewoffvolvo)
                                 ch.write(msgdewoffvolvo)
                                 break
 
@@ -221,6 +259,8 @@ def script(channel_index):
                     print("Sensor fabricante IVECO")
                     sensorid_displayed = True
                 if contador == 0:
+                    ch.write(msgdewoniveco)
+                    ch.write(msgdewoniveco)
                     ch.write(msgdewoniveco)
                     print("Dew point ON")
                     contador += 1
@@ -243,12 +283,15 @@ def script(channel_index):
                             nox_value = calculadados(frame.data[0], frame.data[1], 1, 0, 0)
                             o2_value = calculadados(frame.data[2], frame.data[3], -0.019, -21, 1)
                             sys.stdout.overwrite(f"Nox= {nox_value} ppm, O2= {o2_value} %")
-                            if nox_value < 5:
+
+                            if nox_value < 20:
                                 amostras += 1
-                            if amostras > 150:
+                            if amostras > 300:
                                 print("\n===============================================")
                                 print("\nValor estável")
                                 print(f"Nox= {nox_value} ppm, O2= {o2_value} %")
+                                ch.write(msgdewoffiveco)
+                                ch.write(msgdewoffiveco)
                                 ch.write(msgdewoffiveco)
                                 break
 
@@ -260,6 +303,8 @@ def script(channel_index):
                     print("Sensor fabricante SCANIA")
                     sensorid_displayed = True
                 if contador == 0:
+                    ch.write(msgdewoonscania)
+                    ch.write(msgdewoonscania)
                     ch.write(msgdewoonscania)
                     print("Dew point ON")
                     contador += 1
@@ -282,12 +327,15 @@ def script(channel_index):
                             nox_value = calculadados(frame.data[0], frame.data[1], 1, 26, 0)
                             o2_value = calculadados(frame.data[2], frame.data[3], -0.0186, -20.6, 1)
                             sys.stdout.overwrite(f"Nox= {nox_value} ppm, O2= {o2_value} %")
-                            if nox_value < 5:
+
+                            if nox_value < 20:
                                 amostras += 1
-                            if amostras > 150:
+                            if amostras > 300:
                                 print("\n===============================================")
                                 print("\nValor estável")
                                 print(f"Nox= {nox_value} ppm, O2= {o2_value} %")
+                                ch.write(msgdewoffscania)
+                                ch.write(msgdewoffscania)
                                 ch.write(msgdewoffscania)
                                 break
 
@@ -304,6 +352,7 @@ def script(channel_index):
 
     ch.busOff()
     ch.close()
+    timer.cancel()  # Cancela o timer se o script terminar antes do tempo
 
 root = tk.Tk()
 root.title("ZHsolution")
