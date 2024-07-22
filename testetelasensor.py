@@ -61,7 +61,7 @@ def timer_acabou():
 
 
 def send_all_dewoff_messages():
-    global msgdewoffnorma, msgdewoffmbb, msgdewoffvolvo, msgdewoffiveco, msgdewoffscania,msgdewoffnormapre
+    global msgdewoffnorma, msgdewoffmbb, msgdewoffvolvo, msgdewoffiveco, msgdewoffscania, msgdewoffnormapre
     ch = canlib.openChannel(channel=0)
     ch.setBusParams(canlib.canBITRATE_250K)
     ch.busOn()
@@ -102,7 +102,7 @@ def createframe(id, data):
 
 
 def script(channel_index):
-    global stop_threads, msgdewoffnorma, msgdewoffmbb, msgdewoffvolvo, msgdewoffiveco, msgdewoffscania
+    global stop_threads, msgdewoffnorma, msgdewoffmbb, msgdewoffvolvo, msgdewoffiveco, msgdewoffscania, msgdewoffnormapre
     ch = canlib.openChannel(channel=int(channel_index))
     ch.setBusParams(canlib.canBITRATE_250K)
     ch.busOn()
